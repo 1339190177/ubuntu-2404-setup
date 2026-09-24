@@ -1,0 +1,28 @@
+#!/bin/bash
+# fcitx5-watch.sh —— 监听锁屏/解锁，解锁后自动恢复 fcitx5
+#
+# 问题：GNOME 锁屏-解锁循环会导致 fcitx5 输入上下文丢失
+# 本脚本监听 ScreenSaver.ActiveChanged 信号，解锁后自动重启 fcitx5
+#
+# 由 ~/bin/fix-fcitx5.sh 或 autostart 启动
+
+# 监听 ScreenSaver 状态变化（false = 解锁）
+gdbus monitor --session --dest org.gnome.ScreenSaver \
+    --object-path /org/gnome/ScreenSaver 2>/dev/null | while read -r line; do
+
+    # 检测解锁事件（ActiveChanged 变成 false）
+    if echo "$line" | grep -q "ActiveChanged"; then
+        # 等信号值（gdbus monitor 输出格式：The value of active: false）
+        if echo "$line" | grep -qi "false"; then
+            # 解锁了，重启 fcitx5 恢复输入法
+            sleep 2  # 等桌面完全恢复
+            if ! fcitx5-remote >/dev/null 2>&1 || [ "$(fcitx5-remote 2>/dev/null)" != "2" ]; then
+                pkill -x fcitx5 2>/dev/null
+                sleep 1
+                nohup fcitx5 -d --replace >/dev/null 2>&1 &
+                sleep 2
+                fcitx5-remote -o 2>/dev/null  # 激活中文
+            fi
+        fi
+    fi
+done

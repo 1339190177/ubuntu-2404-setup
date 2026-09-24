@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=显示名
+Comment=说明
+Exec=要执行的命令
+Icon=applications-internet
+Terminal=false

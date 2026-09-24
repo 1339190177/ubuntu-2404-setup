@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=锁屏关屏
+Name[en]=Lock & Screen Off
+GenericName=下班锁屏走人
+Comment=锁屏 + 关显示器（被远控前用）
+Comment[en]=Lock session and turn off monitor
+Exec=~/bin/lock-for-remote.sh on
+Icon=system-lock-screen
+Terminal=false
+Categories=System;
+Keywords=lock;screen;remote;
+StartupNotify=true

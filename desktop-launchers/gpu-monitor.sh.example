@@ -1,0 +1,16 @@
+#!/bin/bash
+# gpu-monitor.sh —— 启动 GPU 监控（nvtop）
+# 给桌面快捷方式调用，在新终端窗口打开 nvtop
+# 2026-09-16 加固：nomodeset 遗留事故中 nvtop "No GPU to monitor" 秒退、
+# 终端随之关闭（闪退无信息）。此包装在无 GPU 时保持窗口并给诊断。
+# 安装位置：~/bin/gpu-monitor.sh（.desktop 的 Exec 指向它）
+
+if ! ls /dev/dri/renderD* >/dev/null 2>&1; then
+    echo "✗ 没有可用的 GPU 渲染节点（/dev/dri/renderD* 不存在）"
+    echo "  常见原因：内核以 nomodeset 启动 / amdgpu 探测失败"
+    echo "  排查命令：journalctl -k -b | grep -i amdgpu"
+    echo
+    echo "窗口保留供查看，输入 exit 关闭。"
+    exec bash
+fi
+exec nvtop

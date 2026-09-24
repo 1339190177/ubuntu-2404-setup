@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=AI 推理服务
+Name[en]=LLM Inference
+GenericName=llama.cpp HIP 服务
+Comment=启动本地 AI 推理服务（Qwen3-VL-8B，端口 1234，兼容 LM Studio）
+Comment[en]=Start local LLM inference (Qwen3-VL-8B, port 1234, LM Studio compatible)
+Exec=gnome-terminal --title="AI 推理服务 - llama.cpp" -- ~/bin/shortcuts/llm-serve.sh
+Icon=applications-science
+Terminal=false
+Categories=Development;Science;
+Keywords=AI;LLM;llama;inference;Qwen;
+StartupNotify=true

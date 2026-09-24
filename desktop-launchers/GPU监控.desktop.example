@@ -1,0 +1,17 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=GPU 监控
+Name[en]=GPU Monitor
+GenericName=AMD GPU 状态监控
+Comment=打开 nvtop 实时监控 AMD 独显/核显状态
+Comment[en]=Open nvtop to monitor AMD GPUs
+# 在新终端窗口中运行 nvtop
+Exec=gnome-terminal --title="GPU 监控 - nvtop" -- nvtop
+# 用显卡/监控相关的图标主题（系统自带）
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;
+Keywords=GPU;nvtop;rocm;AMD;监控;
+StartupNotify=true
+StartupWMClass=nvtop

@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=重启输入法
+Name[en]=Restart Fcitx5
+GenericName=一键重启 fcitx5
+Comment=输入法失活/打不出字时点此重启
+Comment[en]=Restart fcitx5 when input method fails
+Exec=~/bin/restart-fcitx5.sh
+Icon=input-keyboard
+Terminal=false
+Categories=System;Utility;
+Keywords=fcitx;input;method;输入法;
+StartupNotify=true

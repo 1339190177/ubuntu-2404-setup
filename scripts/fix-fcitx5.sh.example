@@ -1,0 +1,16 @@
+#!/bin/bash
+# 检查 fcitx5 健康状态，失活则重启
+# 由 cron 每 1 分钟调用
+
+# 1. 进程不在 → 启动
+if ! pgrep -x fcitx5 >/dev/null; then
+    nohup fcitx5 -d --replace >/dev/null 2>&1 &
+    exit 0
+fi
+
+# 2. 进程在但 remote 不响应 → 重启
+if ! fcitx5-remote >/dev/null 2>&1; then
+    pkill -x fcitx5 2>/dev/null
+    sleep 1
+    nohup fcitx5 -d --replace >/dev/null 2>&1 &
+fi

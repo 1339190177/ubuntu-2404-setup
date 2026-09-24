@@ -1,0 +1,6 @@
+# 输入法环境变量（X11 会话启动时读取）
+# 用 IBus（GNOME 原生，X11/Wayland 都稳定）
+export GTK_IM_MODULE=ibus
+export QT_IM_MODULE=ibus
+export XMODIFIERS=@im=ibus
+export SDL_IM_MODULE=ibus

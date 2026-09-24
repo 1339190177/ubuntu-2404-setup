@@ -1,0 +1,47 @@
+#!/bin/bash
+# OpenVPN 连接脚本（iKuai VPN）
+# 用法: sudo ~/bin/vpn-connect.sh [start|stop|status]
+
+case "$1" in
+    start|"")
+        echo "🔗 连接 iKuai VPN (主 198.51.100.10 / 备 198.51.100.11)..."
+        sudo openvpn --config /etc/openvpn/client/ikuai.ovpn \
+                     --auth-user-pass /etc/openvpn/client/auth.txt \
+                     --daemon vpn-ikuai \
+                     --writepid /var/run/openvpn-ikuai.pid \
+                     --log /var/log/openvpn-ikuai.log
+        sleep 3
+        if pgrep -f "openvpn.*ikuai" >/dev/null; then
+            echo "✅ VPN 已连接（PID: $(cat /var/run/openvpn-ikuai.pid 2>/dev/null)）"
+            echo "   日志: tail -f /var/log/openvpn-ikuai.log"
+        else
+            echo "❌ 连接失败，看日志:"
+            tail -10 /var/log/openvpn-ikuai.log 2>/dev/null
+            grep -q AUTH_FAILED /var/log/openvpn-ikuai.log 2>/dev/null && \
+                echo "💡 AUTH_FAILED：密码错，或账号已被别人在线占用（共享号常见）"
+        fi
+        ;;
+    stop)
+        echo "⛔ 断开 VPN..."
+        sudo kill $(cat /var/run/openvpn-ikuai.pid 2>/dev/null) 2>/dev/null
+        sudo pkill -f "openvpn.*ikuai" 2>/dev/null
+        sleep 1
+        pgrep -f "openvpn.*ikuai" >/dev/null && echo "⚠️ 还在" || echo "✅ 已断开"
+        ;;
+    status)
+        if pgrep -f "openvpn.*ikuai" >/dev/null; then
+            echo "✅ VPN 已连接"
+            echo "   PID: $(cat /var/run/openvpn-ikuai.pid 2>/dev/null)"
+            echo "   TUN 接口:"
+            ip addr show | grep -A2 "tunx\|tun0" | head -5
+        else
+            echo "❌ VPN 未连接"
+        fi
+        # 看最近日志
+        echo "   最近日志:"
+        tail -3 /var/log/openvpn-ikuai.log 2>/dev/null
+        ;;
+    *)
+        echo "用法: sudo $0 {start|stop|status}"
+        ;;
+esac

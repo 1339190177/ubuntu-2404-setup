@@ -1,0 +1,103 @@
+#!/bin/bash
+# lock-for-remote.sh —— 远控模式：锁屏 + 关屏（安全版 v3）
+#
+# v3 修复：
+#   - 用 gdbus 直接调 GNOME Shell ScreenSaver（GNOME 46 正确方式）
+#   - 不再用 loginctl/gnome-screensaver-command（不可靠）
+#   - 加防重入锁（避免双击/多次点击重复执行）
+#
+# 用法：
+#   lock-for-remote.sh on      锁屏 + 关屏（下班走人用）
+#   lock-for-remote.sh off     唤醒显示器（不解锁，安全）
+#   lock-for-remote.sh status  查看状态
+#   lock-for-remote.sh test    只锁屏不关屏（验证密码要求）
+
+LOCK_FILE=/tmp/lock-for-remote.running
+
+# ---------- 防重入（避免双击/多次点击）----------
+acquire_lock() {
+    if [ -f "$LOCK_FILE" ]; then
+        # 检查是不是 5 秒内的重复点击
+        local age=$(( $(date +%s) - $(stat -c %Y "$LOCK_FILE" 2>/dev/null || echo 0) ))
+        if [ "$age" -lt 5 ]; then
+            echo "⚠️  操作太频繁（${age}秒前刚执行过），忽略本次"
+            exit 0
+        fi
+    fi
+    touch "$LOCK_FILE"
+    trap 'rm -f "$LOCK_FILE"' EXIT
+}
+
+# ---------- GNOME 46 锁屏（gdbus，最可靠）----------
+gnome_lock() {
+    gdbus call --session --dest org.gnome.ScreenSaver \
+        --object-path /org/gnome/ScreenSaver \
+        --method org.gnome.ScreenSaver.Lock 2>/dev/null
+}
+
+gnome_is_locked() {
+    gdbus call --session --dest org.gnome.ScreenSaver \
+        --object-path /org/gnome/ScreenSaver \
+        --method org.gnome.ScreenSaver.GetActive 2>/dev/null | grep -q "true"
+}
+
+case "$1" in
+    on|lock)
+        acquire_lock
+        echo "🔒 锁屏 + 关闭显示器（远控模式）"
+
+        # 步骤1: 锁屏（gdbus，GNOME 46 唯一可靠方式）
+        # 注意：Lock 方法返回空 ()，不能用退出码判断成功失败
+        gnome_lock 2>/dev/null
+        echo "  ✅ 锁屏命令已发送"
+
+        # 步骤2: 等锁屏 UI 完全起来
+        sleep 2
+
+        # 步骤3: 验证锁屏真的生效（GetActive 返回 true）
+        if gnome_is_locked; then
+            echo "  ✅ 锁屏已确认（唤醒需要密码）"
+        else
+            echo "  ⚠️  锁屏状态未确认（但不影响使用，命令已发送）"
+        fi
+
+        # 步骤4: 关闭显示器（DPMS）
+        xset dpms force off 2>/dev/null && echo "  ✅ 显示器已关闭"
+
+        echo
+        echo "完成。唤醒方式："
+        echo "  动鼠标/按键 → 屏亮 → 输密码解锁"
+        ;;
+
+    off|unlock)
+        echo "🔓 唤醒显示器（不解锁，安全）"
+        xset dpms force on 2>/dev/null
+        echo "✅ 显示器已唤醒（仍需输密码解锁）"
+        ;;
+
+    status)
+        echo "--- 锁屏状态 ---"
+        gnome_is_locked && echo "  已锁屏" || echo "  未锁屏"
+        echo "--- 显示器状态 ---"
+        xset q 2>/dev/null | grep "Monitor is" | sed 's/^/  /'
+        ;;
+
+    test)
+        echo "🧪 测试：只锁屏不关屏"
+        gnome_lock
+        sleep 2
+        if gnome_is_locked; then
+            echo "✅ 已锁屏（动鼠标应弹出密码框）"
+        else
+            echo "❌ 锁屏失败"
+        fi
+        ;;
+
+    *)
+        echo "用法: $0 {on|off|status|test}"
+        echo "  on     锁屏 + 关屏（被远控前用）"
+        echo "  off    唤醒显示器（不解锁）"
+        echo "  status 查看状态"
+        echo "  test   只锁屏不关屏（验证密码）"
+        ;;
+esac

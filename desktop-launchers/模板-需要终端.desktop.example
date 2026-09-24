@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=显示名
+Comment=说明
+Exec=gnome-terminal --title="标题" -- ~/bin/shortcuts/你的脚本.sh
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;
+StartupNotify=true

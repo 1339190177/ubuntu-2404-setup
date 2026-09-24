@@ -1,0 +1,46 @@
+#!/bin/bash
+# restart-fcitx5.sh —— 一键重启 fcitx5 输入法
+#
+# 解决：输入法失活/打不出字时，一键重启恢复
+# 用法：双击桌面图标，或命令行 ~/bin/restart-fcitx5.sh
+
+# 防重入（5 秒内重复点击忽略）
+LOCK=/tmp/restart-fcitx5.running
+if [ -f "$LOCK" ]; then
+    age=$(( $(date +%s) - $(stat -c %Y "$LOCK" 2>/dev/null || echo 0) ))
+    [ "$age" -lt 5 ] && exit 0
+fi
+touch "$LOCK"
+trap 'rm -f "$LOCK"' EXIT
+
+# 确保环境变量（X11 会话必需）
+export DISPLAY=${DISPLAY:-:1}
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+
+# 1. 杀掉旧 fcitx5（用 pgrep -x 精确匹配，避免误伤）
+for pid in $(pgrep -x fcitx5 2>/dev/null); do
+    kill -9 "$pid" 2>/dev/null
+done
+sleep 2
+
+# 2. 干净启动
+setsid fcitx5 --replace </dev/null >/dev/null 2>&1 &
+disown
+sleep 3
+
+# 3. 激活中文
+fcitx5-remote -o 2>/dev/null
+sleep 1
+
+# 4. 验证
+STATUS=$(fcitx5-remote 2>/dev/null)
+if [ "$STATUS" = "2" ]; then
+    notify-send -i fcitx "输入法已重启" "fcitx5 中文模式已激活，可按 Ctrl+Space 切换" 2>/dev/null
+    echo "✅ fcitx5 重启成功（中文激活）"
+else
+    notify-send -u critical "输入法重启失败" "fcitx5 状态异常: $STATUS" 2>/dev/null
+    echo "⚠️ fcitx5 状态: $STATUS"
+fi
